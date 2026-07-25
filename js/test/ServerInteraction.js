@@ -3,6 +3,63 @@ const common = require('../common');
 const fc = require('fast-check');
 
 describe('ServerInteraction', function () {
+    describe('run', function () {
+        it('reports attachment upload progress through XMLHttpRequest', function () {
+            let progress,
+                success;
+            class XMLHttpRequestMock {
+                constructor() {
+                    this.upload = {
+                        addEventListener: (event, callback) => {
+                            if (event === 'progress') {
+                                this.progressCallback = callback;
+                            }
+                        }
+                    };
+                    this.listeners = {};
+                }
+                open(method, url) {
+                    this.method = method;
+                    this.url = url;
+                }
+                setRequestHeader() {}
+                addEventListener(event, callback) {
+                    this.listeners[event] = callback;
+                }
+                send(body) {
+                    this.body = body;
+                    this.progressCallback({
+                        lengthComputable: true,
+                        loaded: 25,
+                        total: 100
+                    });
+                    this.status = 200;
+                    this.response = {status: 0};
+                    this.listeners.load();
+                }
+            }
+            const originalXMLHttpRequest = global.XMLHttpRequest;
+            global.XMLHttpRequest = XMLHttpRequestMock;
+            window.XMLHttpRequest = XMLHttpRequestMock;
+            try {
+                PrivateBin.ServerInteraction.prepare();
+                PrivateBin.ServerInteraction.setUnencryptedData('meta', {});
+                PrivateBin.ServerInteraction.setProgress((loaded, total) => {
+                    progress = [loaded, total];
+                });
+                PrivateBin.ServerInteraction.setSuccess(() => {
+                    success = true;
+                });
+                PrivateBin.ServerInteraction.run();
+                assert.deepStrictEqual(progress, [25, 100]);
+                assert.strictEqual(success, true);
+            } finally {
+                global.XMLHttpRequest = originalXMLHttpRequest;
+                window.XMLHttpRequest = originalXMLHttpRequest;
+            }
+        });
+    });
+
     describe('prepare', function () {
         afterEach(async function () {
             // pause to let async functions conclude

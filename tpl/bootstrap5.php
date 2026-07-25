@@ -162,6 +162,7 @@ endif;
 						<li id="loadingindicator" class="navbar-text hidden me-auto">
 							<svg width="16" height="16" fill="currentColor" aria-hidden="true"><use href="img/bootstrap-icons.svg#clock" /></svg>
 							<?php echo I18n::_('Loading…'), PHP_EOL; ?>
+							<progress id="uploadprogress" class="hidden align-middle ms-1" max="100" value="0" aria-label="<?php echo I18n::_('Upload progress'); ?>"></progress>
 						</li>
 						<li class="nav-item d-flex flex-lg-row flex-column">
 							<button id="retrybutton" type="button" class="reloadlink hidden btn btn-primary d-flex justify-content-center align-items-center gap-1">

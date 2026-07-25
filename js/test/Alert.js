@@ -292,6 +292,21 @@ describe('Alert', function () {
                 }
             ));
         });
+
+        it('shows and clamps upload progress', () => {
+            document.body.innerHTML =
+                '<div id="loadingindicator" class="hidden">Loading…' +
+                '<progress id="uploadprogress" class="hidden" max="100" value="0"></progress></div>';
+            PrivateBin.Alert.init();
+            PrivateBin.Alert.showLoading('Uploading…', null, 120);
+            const progress = document.getElementById('uploadprogress');
+            assert.strictEqual(progress.value, 100);
+            assert.ok(!progress.classList.contains('hidden'));
+            assert.ok(document.getElementById('loadingindicator').contains(progress));
+            PrivateBin.Alert.showLoading('Loading…');
+            assert.strictEqual(progress.value, 0);
+            assert.ok(progress.classList.contains('hidden'));
+        });
     });
 
     describe('hideLoading', function () {
@@ -302,12 +317,15 @@ describe('Alert', function () {
                     '<ul class="nav navbar-nav"><li id="loadingindicator" ' +
                     'class="navbar-text"><span class="glyphicon ' +
                     'glyphicon-time" aria-hidden="true"></span> ' +
-                    'Loading…</li></ul>';
+                    'Loading…<progress id="uploadprogress" max="100" ' +
+                    'value="50"></progress></li></ul>';
                 document.body.classList.add('loading');
                 PrivateBin.Alert.init();
                 PrivateBin.Alert.hideLoading();
                 assert.ok(!document.body.classList.contains('loading'));
                 assert.ok(document.getElementById('loadingindicator').classList.contains('hidden'));
+                assert.ok(document.getElementById('uploadprogress').classList.contains('hidden'));
+                assert.strictEqual(document.getElementById('uploadprogress').value, 0);
             }
         );
     });

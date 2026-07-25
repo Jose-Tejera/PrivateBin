@@ -1664,6 +1664,7 @@ window.PrivateBin = (function () {
 
         let errorMessage,
             loadingIndicator,
+            uploadProgress,
             statusMessage,
             remainingTime,
             currentIcon,
@@ -1826,14 +1827,30 @@ window.PrivateBin = (function () {
          * @function
          * @param  {string|array|null} message      optional, use an array for %s/%d options, default: 'Loading…'
          * @param  {string|null}       icon         optional, the icon to show, default: leave previous icon
+         * @param  {number|null}       percentage   optional upload progress
          */
-        me.showLoading = function (message, icon) {
+        me.showLoading = function (message, icon, percentage) {
             // default message text
             if (typeof message === 'undefined') {
                 message = 'Loading…';
             }
 
             handleNotification(0, loadingIndicator, message, icon);
+
+            if (uploadProgress) {
+                // handleNotification replaces the indicator contents when it
+                // inserts translated text, so restore the progress element.
+                if (!loadingIndicator.contains(uploadProgress)) {
+                    loadingIndicator.appendChild(uploadProgress);
+                }
+                if (typeof percentage === 'number') {
+                    uploadProgress.value = Math.max(0, Math.min(100, percentage));
+                    uploadProgress.classList.remove('hidden');
+                } else {
+                    uploadProgress.classList.add('hidden');
+                    uploadProgress.value = 0;
+                }
+            }
 
             // show loading status (cursor)
             document.body.classList.add('loading');
@@ -1847,6 +1864,10 @@ window.PrivateBin = (function () {
          */
         me.hideLoading = function () {
             loadingIndicator.classList.add('hidden');
+            if (uploadProgress) {
+                uploadProgress.classList.add('hidden');
+                uploadProgress.value = 0;
+            }
 
             // hide loading cursor
             document.body.classList.remove('loading');
@@ -1905,6 +1926,7 @@ window.PrivateBin = (function () {
             // not a reset, but first set of the elements
             errorMessage = document.getElementById('errormessage');
             loadingIndicator = document.getElementById('loadingindicator');
+            uploadProgress = document.getElementById('uploadprogress');
             statusMessage = document.getElementById('status');
             remainingTime = document.getElementById('remainingtime');
 
@@ -4849,6 +4871,7 @@ window.PrivateBin = (function () {
 
         let successFunc = null,
             failureFunc = null,
+            progressFunc = null,
             symmetricKey = null,
             url,
             data,
@@ -4914,6 +4937,28 @@ window.PrivateBin = (function () {
         }
 
         /**
+         * handles a parsed server response
+         *
+         * @name   ServerInteraction.handleResult
+         * @private
+         * @function
+         * @param {object} result
+         */
+        function handleResult(result) {
+            if (result === null || typeof result !== 'object') {
+                fail(3, result);
+                return;
+            }
+            if (result.status === 0) {
+                success(0, result);
+            } else if (result.status === 1) {
+                fail(1, result);
+            } else {
+                fail(2, result);
+            }
+        }
+
+        /**
          * actually uploads the data
          *
          * @name   ServerInteraction.run
@@ -4928,6 +4973,35 @@ window.PrivateBin = (function () {
             if (isPost) {
                 options.body = JSON.stringify(data);
             }
+
+            // Fetch does not expose upload progress. Use native XHR only when
+            // a caller explicitly requests progress updates.
+            if (isPost && progressFunc !== null) {
+                const request = new XMLHttpRequest();
+                request.open('POST', url);
+                Object.entries(ajaxHeaders).forEach(([header, value]) => {
+                    request.setRequestHeader(header, value);
+                });
+                request.responseType = 'json';
+                request.upload.addEventListener('progress', event => {
+                    if (event.lengthComputable) {
+                        progressFunc(event.loaded, event.total);
+                    }
+                });
+                request.addEventListener('load', () => {
+                    if (request.status >= 200 && request.status < 300) {
+                        handleResult(request.response);
+                    } else {
+                        fail(3, request);
+                    }
+                });
+                request.addEventListener('error', () => {
+                    fail(3, request);
+                });
+                request.send(options.body);
+                return;
+            }
+
             fetch(url, options)
                 .then(response => {
                     if (!response.ok) {
@@ -4936,13 +5010,7 @@ window.PrivateBin = (function () {
                     return response.json();
                 })
                 .then(result => {
-                    if (result.status === 0) {
-                        success(0, result);
-                    } else if (result.status === 1) {
-                        fail(1, result);
-                    } else {
-                        fail(2, result);
-                    }
+                    handleResult(result);
                 })
                 .catch(error => {
                     console.error(error);
@@ -5013,6 +5081,17 @@ window.PrivateBin = (function () {
         };
 
         /**
+         * set upload progress function
+         *
+         * @name   ServerInteraction.setProgress
+         * @function
+         * @param {function} func
+         */
+        me.setProgress = function (func) {
+            progressFunc = func;
+        };
+
+        /**
          * prepares a new upload
          *
          * Call this when doing a new upload to reset any data from potential
@@ -5035,6 +5114,7 @@ window.PrivateBin = (function () {
             // reset data
             successFunc = null;
             failureFunc = null;
+            progressFunc = null;
             url = Helper.baseUri();
             data = {};
         };
@@ -5271,10 +5351,11 @@ window.PrivateBin = (function () {
             const plainText = Editor.getText(),
                   format    = PasteViewer.getFormat(),
                   // the methods may return different values if no files are attached (null, undefined or false)
-                  files     = TopNav.getFileList() || AttachmentViewer.getFiles() || AttachmentViewer.hasAttachmentData();
+                  files     = TopNav.getFileList() || AttachmentViewer.getFiles() || AttachmentViewer.hasAttachmentData(),
+                  hasFiles  = files === true || (files && files.length > 0);
 
             // do not send if there is no data
-            if (plainText.length === 0 && !files) {
+            if (plainText.length === 0 && !hasFiles) {
                 // revert loading status…
                 Alert.hideLoading();
                 TopNav.showCreateButtons();
@@ -5297,6 +5378,16 @@ window.PrivateBin = (function () {
                     ServerInteraction.parseUploadError(status, data, 'create document')
                 );
             });
+            if (hasFiles) {
+                ServerInteraction.setProgress(function (loaded, total) {
+                    const percentage = Math.round(loaded / total * 100);
+                    Alert.showLoading(
+                        ['Uploading document… %d%%', percentage],
+                        'cloud-upload',
+                        percentage
+                    );
+                });
+            }
 
             // fill it with unencrypted submitted options
             ServerInteraction.setUnencryptedData('adata', [
@@ -6154,5 +6245,4 @@ if (typeof module === 'undefined' || !module.exports) {
         window.PrivateBin.Controller.init();
     });
 }
-
 
