@@ -5315,11 +5315,15 @@ window.PrivateBin = (function () {
             // get data
             const plainText = Editor.getText(),
                   format    = PasteViewer.getFormat(),
-                  // the methods may return different values if no files are attached (null, undefined or false)
-                  files     = TopNav.getFileList() || AttachmentViewer.getFiles() || AttachmentViewer.hasAttachmentData();
+                  selectedFiles = TopNav.getFileList() || AttachmentViewer.getFiles(),
+                  hasAttachments = (
+                      (selectedFiles && selectedFiles.length > 0) ||
+                      AttachmentViewer.hasAttachmentData() ||
+                      AttachmentViewer.hasAttachment()
+                  );
 
             // do not send if there is no data
-            if (plainText.length === 0 && !files) {
+            if (plainText.length === 0 && !hasAttachments) {
                 // revert loading status…
                 Alert.hideLoading();
                 TopNav.showCreateButtons();

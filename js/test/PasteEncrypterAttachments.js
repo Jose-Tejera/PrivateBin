@@ -96,4 +96,50 @@ describe('PasteEncrypter attachment loading', function () {
         assert.strictEqual(shownError, 'Cannot read attachment.');
         clean();
     });
+
+    it('does not upload an empty document after attachments are removed', async function () {
+        const clean = globalThis.cleanup('', {url: 'https://example.com/'});
+        let loadingHidden = false,
+            createButtonsShown = false,
+            uploadAttempted = false;
+        PrivateBin.Controller.hideStatusMessages = function () {};
+        PrivateBin.TopNav.hideAllButtons = function () {};
+        PrivateBin.TopNav.collapseBar = function () {};
+        PrivateBin.TopNav.showCreateButtons = function () {
+            createButtonsShown = true;
+        };
+        PrivateBin.TopNav.getFileList = function () { return null; };
+        PrivateBin.TopNav.getPassword = function () { return ''; };
+        PrivateBin.TopNav.getOpenDiscussion = function () { return false; };
+        PrivateBin.TopNav.getBurnAfterReading = function () { return false; };
+        PrivateBin.TopNav.getExpiration = function () { return '5min'; };
+        PrivateBin.Alert.showLoading = function () {};
+        PrivateBin.Alert.hideLoading = function () { loadingHidden = true; };
+        PrivateBin.Editor.getText = function () { return ''; };
+        PrivateBin.PasteViewer.getFormat = function () { return 'plaintext'; };
+        PrivateBin.PasteViewer.setText = function () {};
+        PrivateBin.PasteViewer.setFormat = function () {};
+        PrivateBin.AttachmentViewer.getAttachmentDataPromise = function () {
+            return Promise.resolve();
+        };
+        PrivateBin.AttachmentViewer.getFiles = function () { return []; };
+        PrivateBin.AttachmentViewer.hasAttachmentData = function () { return false; };
+        PrivateBin.AttachmentViewer.hasAttachment = function () { return false; };
+        PrivateBin.ServerInteraction.prepare = function () {};
+        PrivateBin.ServerInteraction.setCryptParameters = function () {};
+        PrivateBin.ServerInteraction.setSuccess = function () {};
+        PrivateBin.ServerInteraction.setFailure = function () {};
+        PrivateBin.ServerInteraction.setUnencryptedData = function () {};
+        PrivateBin.ServerInteraction.setCipherMessage = async function () {};
+        PrivateBin.ServerInteraction.run = function () {
+            uploadAttempted = true;
+        };
+
+        await PrivateBin.PasteEncrypter.sendPaste();
+
+        assert.strictEqual(uploadAttempted, false);
+        assert.strictEqual(loadingHidden, true);
+        assert.strictEqual(createButtonsShown, true);
+        clean();
+    });
 });
