@@ -14,6 +14,8 @@
 * FIXED: Dead PATH validation guard in Controller, the check for a missing trailing directory separator never ran (#1887)
 * FIXED: Wait for selected attachments to finish loading before encrypting a document
 * FIXED: Prevent empty documents after attachments have been removed
+* FIXED: Preserve cloned data URL attachments when creating a new document
+* FIXED: Restore the editor when a cloned blob attachment cannot be retrieved
 
 ## 2.0.5 (2026-07-11)
 * CHANGED: Show OS-specific copy hotkey hint (Cmd+c on Mac, Ctrl+c on others) (#1506)
