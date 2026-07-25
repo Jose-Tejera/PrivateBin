@@ -4211,17 +4211,29 @@ window.PrivateBin = (function () {
                     triggerEmailSend(emailBody);
                 }
 
+                function sendEmailInUtc() {
+                    localeConfiguration.timeZone = 'UTC';
+                    sendEmailAndHideModal();
+                }
+
+                const timezonePreference = emailLink.dataset.timezone || 'ask';
+                if (timezonePreference === 'current') {
+                    sendEmailAndHideModal();
+                    return;
+                }
+                if (timezonePreference === 'utc') {
+                    sendEmailInUtc();
+                    return;
+                }
+
                 emailconfirmmodal.addEventListener('shown.bs.modal', () => {
                     emailconfirmTimezoneUtc.focus();
                 });
 
                 emailconfirmTimezoneCurrent.removeEventListener('click', sendEmailAndHideModal);
                 emailconfirmTimezoneCurrent.addEventListener('click', sendEmailAndHideModal);
-                emailconfirmTimezoneUtc.removeEventListener('click', sendEmailAndHideModal);
-                emailconfirmTimezoneUtc.addEventListener('click', () => {
-                    localeConfiguration.timeZone = 'UTC';
-                    sendEmailAndHideModal();
-                });
+                emailconfirmTimezoneUtc.removeEventListener('click', sendEmailInUtc);
+                emailconfirmTimezoneUtc.addEventListener('click', sendEmailInUtc);
                 if (bootstrap5EmailConfirmModal) {
                     bootstrap5EmailConfirmModal.show();
                 }
@@ -6154,5 +6166,4 @@ if (typeof module === 'undefined' || !module.exports) {
         window.PrivateBin.Controller.init();
     });
 }
-
 

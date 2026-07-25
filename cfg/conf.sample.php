@@ -89,6 +89,11 @@ languageselection = false
 ; It works both when a new document is created and when you view a document.
 ; email = true
 
+; (optional) How to format expiration dates in shared emails.
+; "ask" lets the user choose, "utc" avoids leaking their timezone and "current"
+; uses their local timezone without confirmation. "ask" is the recommended default.
+; mailtimezone = "ask"
+
 ; (optional) IP based icons are a weak mechanism to detect if a comment was from
 ; a different user when the same username was used in a comment. It might get
 ; used to get the IP of a comment poster if the server salt is leaked and a

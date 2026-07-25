@@ -139,4 +139,26 @@ describe('Email - mail body content (short URL vs. fallback)', function () {
             restore();
         }
     });
+
+    for (const timezone of ['utc', 'current']) {
+        it(`Uses configured ${timezone} expiration formatting without prompting`, function () {
+            buildEmailDomNoShortUrl();
+            const emailBtn = document.getElementById('emaillink');
+            emailBtn.dataset.timezone = timezone;
+            PrivateBin.TopNav.init();
+            PrivateBin.TopNav.showEmailButton(3600);
+
+            const { getUrl, restore } = makeWindowOpenMock();
+            try {
+                emailBtn.click();
+
+                const openedUrl = getUrl();
+                assert.ok(openedUrl, 'window.open should have been called without a timezone choice');
+                const body = extractMailtoBody(openedUrl);
+                assert.match(body, /Link:/);
+            } finally {
+                restore();
+            }
+        });
+    }
 });

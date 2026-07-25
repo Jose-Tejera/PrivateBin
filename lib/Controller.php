@@ -484,6 +484,7 @@ class Controller
         $page->assign('SHORTENBYDEFAULT', $this->_conf->getKey('shortenbydefault'));
         $page->assign('QRCODE', $this->_conf->getKey('qrcode'));
         $page->assign('EMAIL', $this->_conf->getKey('email'));
+        $page->assign('MAILTIMEZONE', $this->_conf->getKey('mailtimezone'));
         $page->assign('HTTPWARNING', $this->_conf->getKey('httpwarning'));
         $page->assign('HTTPSLINK', 'https://' . $this->_request->getHost() . $this->_request->getRequestUri());
         $page->assign('COMPRESSION', $this->_conf->getKey('compression'));

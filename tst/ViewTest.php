@@ -61,6 +61,7 @@ class ViewTest extends TestCase
         $page->assign('URLSHORTENER', '');
         $page->assign('QRCODE', true);
         $page->assign('EMAIL', true);
+        $page->assign('MAILTIMEZONE', 'ask');
         $page->assign('HTTPWARNING', true);
         $page->assign('HTTPSLINK', 'https://example.com/');
         $page->assign('COMPRESSION', 'zlib');
