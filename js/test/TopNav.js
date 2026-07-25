@@ -734,6 +734,45 @@ describe('TopNav', function () {
         );
     });
 
+    describe('save shortcut', function () {
+        it('creates a document with Ctrl+S or Cmd+S only when creation is available', function () {
+            const originalSendPaste = PrivateBin.PasteEncrypter.sendPaste;
+            let sendCount = 0;
+            PrivateBin.PasteEncrypter.sendPaste = function () {
+                ++sendCount;
+            };
+
+            try {
+                document.body.innerHTML = '<button id="sendbutton" type="button" class="hidden">Create</button>';
+                PrivateBin.TopNav.init();
+
+                const hiddenEvent = new KeyboardEvent('keydown', {
+                    key: 's',
+                    ctrlKey: true,
+                    cancelable: true
+                });
+                document.dispatchEvent(hiddenEvent);
+                assert.strictEqual(sendCount, 0);
+                assert.ok(!hiddenEvent.defaultPrevented);
+
+                query('#sendbutton').classList.remove('hidden');
+                for (const modifier of ['ctrlKey', 'metaKey']) {
+                    const shortcutEvent = new KeyboardEvent('keydown', {
+                        key: 's',
+                        [modifier]: true,
+                        cancelable: true
+                    });
+                    document.dispatchEvent(shortcutEvent);
+                    assert.ok(shortcutEvent.defaultPrevented);
+                }
+                assert.strictEqual(sendCount, 2);
+            } finally {
+                PrivateBin.PasteEncrypter.sendPaste = originalSendPaste;
+                cleanup();
+            }
+        });
+    });
+
     describe('hideAllButtons', function () {
         before(function () {
             cleanup();

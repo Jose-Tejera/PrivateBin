@@ -3864,6 +3864,29 @@ window.PrivateBin = (function () {
         }
 
         /**
+         * creates a new document when Ctrl+S or Cmd+S is pressed
+         *
+         * @name   TopNav.sendPasteShortcut
+         * @private
+         * @function
+         * @param  {KeyboardEvent} event
+         */
+        function sendPasteShortcut(event) {
+            if (
+                (!event.ctrlKey && !event.metaKey) ||
+                event.altKey ||
+                event.shiftKey ||
+                event.key.toLowerCase() !== 's' ||
+                !sendButton ||
+                sendButton.classList.contains('hidden')
+            ) {
+                return;
+            }
+            event.preventDefault();
+            sendButton.click();
+        }
+
+        /**
          * when "burn after reading" is checked, disable discussion
          *
          * @name   TopNav.changeBurnAfterReading
@@ -4737,6 +4760,8 @@ window.PrivateBin = (function () {
             if (sendButton) {
                 sendButton.addEventListener('click', PasteEncrypter.sendPaste);
             }
+            document.removeEventListener('keydown', sendPasteShortcut);
+            document.addEventListener('keydown', sendPasteShortcut);
             if (cloneButton) {
                 cloneButton.addEventListener('click', Controller.clonePaste);
             }
