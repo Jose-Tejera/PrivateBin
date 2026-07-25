@@ -139,4 +139,26 @@ describe('Email - mail body content (short URL vs. fallback)', function () {
             restore();
         }
     });
+
+    it('Includes a configured, URL-encoded email subject', function () {
+        buildEmailDomNoShortUrl();
+        const emailBtn = document.getElementById('emaillink');
+        emailBtn.dataset.subject = 'A private & secure document';
+        PrivateBin.TopNav.init();
+        PrivateBin.TopNav.showEmailButton(0);
+
+        const { getUrl, restore } = makeWindowOpenMock();
+        try {
+            emailBtn.click();
+
+            const openedUrl = getUrl();
+            assert.ok(openedUrl, 'window.open should have been called');
+            assert.match(
+                openedUrl,
+                /^mailto:\?subject=A%20private%20%26%20secure%20document&body=/
+            );
+        } finally {
+            restore();
+        }
+    });
 });

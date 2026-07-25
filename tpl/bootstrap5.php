@@ -185,7 +185,7 @@ endif;
 if ($EMAIL) :
 ?>
 
-							<button id="emaillink" type="button" class="hidden btn btn-secondary flex-fill d-flex justify-content-center align-items-center gap-1">
+							<button id="emaillink" type="button" data-subject="<?php echo I18n::encode($EMAILSUBJECT); ?>" class="hidden btn btn-secondary flex-fill d-flex justify-content-center align-items-center gap-1">
 								<svg width="16" height="16" fill="currentColor" aria-hidden="true"><use href="img/bootstrap-icons.svg#envelope" /></svg> <?php echo I18n::_('Email'), PHP_EOL; ?>
 							</button>
 <?php

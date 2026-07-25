@@ -4165,8 +4165,14 @@ window.PrivateBin = (function () {
          * @param {string} emailBody
          */
         function triggerEmailSend(emailBody) {
+            const subject = emailLink && emailLink.dataset.subject;
+            const parameters = [];
+            if (subject) {
+                parameters.push(`subject=${encodeURIComponent(subject)}`);
+            }
+            parameters.push(`body=${encodeURIComponent(emailBody)}`);
             window.open(
-                `mailto:?body=${encodeURIComponent(emailBody)}`,
+                `mailto:?${parameters.join('&')}`,
                 '_self',
                 'noopener, noreferrer'
             );

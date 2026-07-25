@@ -89,6 +89,10 @@ languageselection = false
 ; It works both when a new document is created and when you view a document.
 ; email = true
 
+; (optional) Subject to prefill when sharing a document by email.
+; The user can still edit it in their email client.
+; emailsubject = ""
+
 ; (optional) IP based icons are a weak mechanism to detect if a comment was from
 ; a different user when the same username was used in a comment. It might get
 ; used to get the IP of a comment poster if the server salt is leaked and a
