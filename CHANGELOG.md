@@ -16,6 +16,7 @@
 * FIXED: Prevent empty documents after attachments have been removed
 * FIXED: Preserve cloned data URL attachments when creating a new document
 * FIXED: Restore the editor when a cloned blob attachment cannot be retrieved
+* FIXED: Reject malformed decrypted attachment data without breaking the document view
 
 ## 2.0.5 (2026-07-11)
 * CHANGED: Show OS-specific copy hotkey hint (Cmd+c on Mac, Ctrl+c on others) (#1506)

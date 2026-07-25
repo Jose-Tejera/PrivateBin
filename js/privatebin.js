@@ -2886,9 +2886,24 @@ window.PrivateBin = (function () {
             if (!attachment) return;
 
             // data URI format: data:[<mimeType>][;base64],<data>
+            if (
+                typeof attachmentData !== 'string' ||
+                !/^data:[^,]*;base64,/i.test(attachmentData)
+            ) {
+                Alert.showError('Cannot process attachment data.');
+                return;
+            }
 
             const template = Model.getTemplate('attachment');
+            if (!template) {
+                Alert.showError('Cannot process attachment data.');
+                return;
+            }
             const attachmentLink = template.querySelector('a');
+            if (!attachmentLink) {
+                Alert.showError('Cannot process attachment data.');
+                return;
+            }
 
             // position in data URI string of where data begins
             const base64Start = attachmentData.indexOf(',') + 1;
@@ -2904,7 +2919,23 @@ window.PrivateBin = (function () {
 
             // extract data and convert to binary
             const rawData = attachmentData.substring(base64Start);
-            const decodedData = rawData.length > 0 ? atob(rawData) : '';
+            if (
+                rawData.length > 0 &&
+                (
+                    rawData.length % 4 !== 0 ||
+                    !/^[A-Za-z0-9+/]*={0,2}$/.test(rawData)
+                )
+            ) {
+                Alert.showError('Cannot process attachment data.');
+                return;
+            }
+            let decodedData;
+            try {
+                decodedData = rawData.length > 0 ? atob(rawData) : '';
+            } catch (error) {
+                Alert.showError('Cannot process attachment data.');
+                return;
+            }
 
             let blobUrl = getBlobUrl(decodedData, safeMimeType);
             attachmentLink.setAttribute('href', blobUrl);

@@ -157,6 +157,38 @@ describe('AttachmentViewer', function () {
                 }
             }
         );
+
+        it('rejects malformed attachment data without throwing', function () {
+            document.body.innerHTML = (
+                '<div id="status" class="hidden"></div>' +
+                '<div id="errormessage" class="hidden"></div>' +
+                '<div id="attachmentPreview" class="hidden"></div>' +
+                '<div id="attachment" class="hidden"></div>' +
+                '<div id="templates">' +
+                    '<div id="attachmenttemplate" class="attachment hidden">' +
+                        '<a class="alert-link">Download attachment</a>' +
+                    '</div>' +
+                '</div>'
+            );
+            PrivateBin.Alert.init();
+            PrivateBin.AttachmentViewer.init();
+            PrivateBin.Model.init();
+            global.atob = common.atob;
+
+            [
+                null,
+                {},
+                'not-a-data-url',
+                'data:text/plain;base64,%%%'
+            ].forEach(function (invalidData) {
+                assert.doesNotThrow(function () {
+                    PrivateBin.AttachmentViewer.setAttachment(invalidData, 'invalid.txt');
+                });
+            });
+
+            assert.strictEqual(document.getElementById('attachment').children.length, 0);
+            assert.ok(!document.getElementById('errormessage').classList.contains('hidden'));
+        });
     });
 
     describe('showAttachment()', function () {
@@ -204,5 +236,4 @@ describe('AttachmentViewer', function () {
         }
     }
 });
-
 
