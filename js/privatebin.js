@@ -2840,6 +2840,8 @@ window.PrivateBin = (function () {
             attachment,
             attachmentsData = [],
             files,
+            fileReadGeneration = 0,
+            fileReadPromise = Promise.resolve(),
             fileInput,
             dragAndDropFileNames,
             dropzone;
@@ -3029,8 +3031,10 @@ window.PrivateBin = (function () {
          * @function
          */
         me.removeAttachmentData = function () {
+            ++fileReadGeneration;
             files = [];
             attachmentsData = [];
+            fileReadPromise = Promise.resolve();
         };
 
         /**
@@ -3201,6 +3205,7 @@ window.PrivateBin = (function () {
         function readFileData(loadedFiles = []) {
             // Clear old cache
             me.removeAttachmentData();
+            const readGeneration = fileReadGeneration;
 
             if (typeof FileReader === 'undefined') {
                 // revert loading status…
@@ -3223,25 +3228,40 @@ window.PrivateBin = (function () {
 
             if (loadedFiles.length > 0) {
                 files = loadedFiles;
-                loadedFiles.forEach((loadedFile, index) => {
-                    const fileReader = new FileReader();
+                fileReadPromise = Promise.all(
+                    loadedFiles.map((loadedFile, index) => new Promise((resolve, reject) => {
+                        const fileReader = new FileReader();
 
-                    fileReader.onload = function (event) {
-                        const dataURL = event.target.result;
-                        if (dataURL) {
-                            attachmentsData[index] = dataURL;
-                        }
+                        fileReader.onload = function (event) {
+                            if (readGeneration !== fileReadGeneration) {
+                                resolve();
+                                return;
+                            }
+                            const dataURL = event.target.result;
+                            if (dataURL) {
+                                attachmentsData[index] = dataURL;
+                            }
 
-                        if (Editor.isPreview()) {
-                            me.handleAttachmentPreview(attachmentPreview, dataURL);
-                            attachmentPreview.classList.remove('hidden');
-                        }
+                            if (Editor.isPreview()) {
+                                me.handleAttachmentPreview(attachmentPreview, dataURL);
+                                attachmentPreview.classList.remove('hidden');
+                            }
 
-                        TopNav.highlightFileupload();
-                    };
+                            TopNav.highlightFileupload();
+                            resolve();
+                        };
+                        fileReader.onerror = function () {
+                            if (readGeneration !== fileReadGeneration) {
+                                resolve();
+                                return;
+                            }
+                            reject(new Error('Cannot read attachment.'));
+                        };
+                        fileReader.onabort = fileReader.onerror;
 
-                    fileReader.readAsDataURL(loadedFile);
-                });
+                        fileReader.readAsDataURL(loadedFile);
+                    }))
+                );
             } else {
                 me.removeAttachmentData();
             }
@@ -3397,6 +3417,21 @@ window.PrivateBin = (function () {
          */
         me.getAttachmentsData = function () {
             return attachmentsData;
+        };
+
+        /**
+         * waits until all files in the latest selection have been read
+         *
+         * @name   AttachmentViewer.getAttachmentDataPromise
+         * @function
+         * @return {Promise}
+         */
+        me.getAttachmentDataPromise = async function () {
+            let pendingRead;
+            do {
+                pendingRead = fileReadPromise;
+                await pendingRead;
+            } while (pendingRead !== fileReadPromise);
         };
 
         /**
@@ -5267,6 +5302,16 @@ window.PrivateBin = (function () {
             Alert.showLoading('Sending document…', 'cloud-upload');
             TopNav.collapseBar();
 
+            try {
+                await AttachmentViewer.getAttachmentDataPromise();
+            } catch (error) {
+                console.error(error);
+                Alert.hideLoading();
+                TopNav.showCreateButtons();
+                Alert.showError('Cannot read attachment.');
+                return;
+            }
+
             // get data
             const plainText = Editor.getText(),
                   format    = PasteViewer.getFormat(),
@@ -6154,5 +6199,3 @@ if (typeof module === 'undefined' || !module.exports) {
         window.PrivateBin.Controller.init();
     });
 }
-
-
