@@ -1170,7 +1170,7 @@ window.PrivateBin = (function () {
                 { name: 'PBKDF2' }, // we use PBKDF2 for key derivation
                 false, // the key may not be exported
                 ['deriveKey'] // we may only use it for key derivation
-            ).catch(Alert.showError);
+            );
 
             // derive a stronger key for use with AES
             return window.crypto.subtle.deriveKey(
@@ -1187,7 +1187,7 @@ window.PrivateBin = (function () {
                 },
                 false, // the key may not be exported
                 ['encrypt', 'decrypt'] // we may only use it for en- and decryption
-            ).catch(Alert.showError);
+            );
         }
 
         /**
@@ -1259,7 +1259,7 @@ window.PrivateBin = (function () {
                             cryptoSettings(JSON.stringify(adata), spec),
                             await deriveKey(key, password, spec),
                             await compress(message, compression, zlib)
-                        ).catch(Alert.showError)
+                        )
                     )
                 ),
                 adata
@@ -5185,6 +5185,28 @@ window.PrivateBin = (function () {
         }
 
         /**
+         * encrypts the message and sends it only after successful encryption
+         *
+         * @name PasteEncrypter.encryptAndSend
+         * @private
+         * @async
+         * @function
+         * @param {object} cipherMessage
+         * @param {function} restoreView
+         */
+        async function encryptAndSend(cipherMessage, restoreView) {
+            try {
+                await ServerInteraction.setCipherMessage(cipherMessage);
+            } catch (error) {
+                Alert.showError(error);
+                Alert.hideLoading();
+                restoreView();
+                return;
+            }
+            ServerInteraction.run();
+        }
+
+        /**
          * send a reply in a discussion
          *
          * @name   PasteEncrypter.sendComment
@@ -5247,8 +5269,10 @@ window.PrivateBin = (function () {
                 cipherMessage['nickname'] = nickname;
             }
 
-            await ServerInteraction.setCipherMessage(cipherMessage).catch(Alert.showError);
-            ServerInteraction.run();
+            await encryptAndSend(cipherMessage, function () {
+                TopNav.showViewButtons();
+                Alert.setCustomHandler(null);
+            });
         };
 
         /**
@@ -5370,11 +5394,7 @@ window.PrivateBin = (function () {
                 }));
             }
 
-            // encrypt message
-            await ServerInteraction.setCipherMessage(cipherMessage).catch(Alert.showError);
-
-            // send data
-            ServerInteraction.run();
+            await encryptAndSend(cipherMessage, TopNav.showCreateButtons);
         };
 
         return me;
@@ -6154,5 +6174,3 @@ if (typeof module === 'undefined' || !module.exports) {
         window.PrivateBin.Controller.init();
     });
 }
-
-
