@@ -190,6 +190,23 @@ describe('AttachmentViewer', function () {
         )
     });
 
+    describe('isSafeMimeType()', function () {
+        it('rejects SVG case-insensitively and only accepts the PDF media type', function () {
+            assert.strictEqual(
+                PrivateBin.AttachmentViewer.isSafeMimeType('image/SVG+xml'),
+                false
+            );
+            assert.strictEqual(
+                PrivateBin.AttachmentViewer.isSafeMimeType('text/html/pdf'),
+                false
+            );
+            assert.strictEqual(
+                PrivateBin.AttachmentViewer.isSafeMimeType('application/pdf'),
+                true
+            );
+        });
+    });
+
     function mockCreateObjectUrl() {
         if (typeof window.URL.createObjectURL === 'undefined') {
             Object.defineProperty(
@@ -204,5 +221,4 @@ describe('AttachmentViewer', function () {
         }
     }
 });
-
 

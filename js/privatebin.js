@@ -2944,37 +2944,20 @@ window.PrivateBin = (function () {
          * @name AttachmentViewer.isSafeMimeType
          * @function
          * @param {string}
-         * @returns {bool}
+        * @returns {bool}
          */
         me.isSafeMimeType = function(mimeType) {
+            if (typeof mimeType !== 'string') {
+                return false;
+            }
+            mimeType = mimeType.toLowerCase();
             return (
                     mimeType.startsWith('image/') &&
                     !mimeType.includes('svg')
                 ) ||
                 mimeType.startsWith('video/') ||
                 mimeType.startsWith('audio/') ||
-                mimeType.endsWith('/pdf') ||
-                mimeType === 'text/plain';
-        };
-
-        /**
-         * Evaluates whether this is known a safe mime type.
-         *
-         * This means, the media can safely be displayed and e.g. no XSS should be possible.
-         *
-         * @name AttachmentViewer.isSafeMimeType
-         * @function
-         * @param {string}
-         * @returns {bool}
-         */
-        me.isSafeMimeType = function(mimeType) {
-            return (
-                    mimeType.startsWith('image/') &&
-                    !mimeType.includes('svg')
-                ) ||
-                mimeType.startsWith('video/') ||
-                mimeType.startsWith('audio/') ||
-                mimeType.endsWith('/pdf') ||
+                mimeType === 'application/pdf' ||
                 mimeType === 'text/plain';
         };
 
@@ -6154,5 +6137,4 @@ if (typeof module === 'undefined' || !module.exports) {
         window.PrivateBin.Controller.init();
     });
 }
-
 
