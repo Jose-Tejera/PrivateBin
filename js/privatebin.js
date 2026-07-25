@@ -933,6 +933,7 @@ window.PrivateBin = (function () {
                 .catch(error => {
                     console.error(`Language \'${newLanguage}\' could not be loaded (${error.message}). Translation failed, fallback to English.`);
                     language = 'en';
+                    document.dispatchEvent(new CustomEvent(languageLoadedEvent));
                 });
         };
 
@@ -6150,4 +6151,3 @@ if (typeof module === 'undefined' || !module.exports) {
         window.PrivateBin.Controller.init();
     });
 }
-
