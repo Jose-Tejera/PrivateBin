@@ -102,6 +102,25 @@ describe('PasteStatus', function () {
     describe('extractUrl', function () {
         this.timeout(30000);
 
+        it('opens a shortened document URL in a separate, isolated tab', function () {
+            cleanup();
+            document.body.innerHTML = '<div id="pastelink"></div>';
+            PrivateBin.PasteStatus.init();
+            PrivateBin.PasteStatus.createPasteNotification(
+                'https://privatebin.example/?paste#key',
+                ''
+            );
+
+            const pasteUrl = document.getElementById('pasteurl');
+            assert.strictEqual(pasteUrl.target, '');
+
+            PrivateBin.PasteStatus.extractUrl('https://short.example/abc');
+
+            assert.strictEqual(pasteUrl.target, '_blank');
+            assert.strictEqual(pasteUrl.rel, 'noopener noreferrer');
+            cleanup();
+        });
+
         it('extracts and updates IDN URLs found in given response', () => {
             fc.assert(fc.property(
                 common.fcSchemas(false),

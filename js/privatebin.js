@@ -2084,6 +2084,8 @@ window.PrivateBin = (function () {
                     // update link
                     pasteUrl.textContent = shortUrl;
                     pasteUrl.href = shortUrl;
+                    pasteUrl.target = '_blank';
+                    pasteUrl.rel = 'noopener noreferrer';
                     // we pre-select the link so that the user only has to [Ctrl]+[c] the link
                     Helper.selectText(pasteUrl);
                     CopyToClipboard.setUrl(shortUrl);
