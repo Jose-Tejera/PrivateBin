@@ -5627,9 +5627,7 @@ window.PrivateBin = (function () {
 
             copyButton.addEventListener('click', function () {
                 const text = PasteViewer.getText();
-                saveToClipboard(text);
-
-                showAlertMessage('Document copied to clipboard');
+                copyToClipboard(text, 'Document copied to clipboard');
             });
         }
 
@@ -5644,9 +5642,7 @@ window.PrivateBin = (function () {
             if (!copyLinkButton) return;
 
             copyLinkButton.addEventListener('click', function () {
-                saveToClipboard(url);
-
-                showAlertMessage('Link copied to clipboard');
+                copyToClipboard(url, 'Link copied to clipboard');
             });
         }
 
@@ -5658,12 +5654,19 @@ window.PrivateBin = (function () {
          * @function
          */
         function handleKeyboardShortcut() {
-            document.addEventListener('copy', function () {
+            document.addEventListener('copy', function (event) {
                 if (!isUserSelectedTextToCopy()) {
                     const text = PasteViewer.getText();
-                    saveToClipboard(text);
-
-                    showAlertMessage('Document copied to clipboard');
+                    if (
+                        event.clipboardData &&
+                        typeof event.clipboardData.setData === 'function'
+                    ) {
+                        event.preventDefault();
+                        event.clipboardData.setData('text/plain', text);
+                        showAlertMessage('Document copied to clipboard');
+                    } else {
+                        copyToClipboard(text, 'Document copied to clipboard');
+                    }
                 }
             });
         }
@@ -5697,7 +5700,32 @@ window.PrivateBin = (function () {
          * @function
          */
         function saveToClipboard(text) {
-            navigator.clipboard.writeText(text);
+            if (
+                !navigator.clipboard ||
+                typeof navigator.clipboard.writeText !== 'function'
+            ) {
+                return Promise.reject(new Error('Clipboard API unavailable'));
+            }
+            return navigator.clipboard.writeText(text);
+        }
+
+        /**
+         * Save text and only report success after the clipboard accepted it
+         *
+         * @name CopyToClipboard.copyToClipboard
+         * @private
+         * @param {string} text
+         * @param {string} successMessage
+         * @function
+         */
+        async function copyToClipboard(text, successMessage) {
+            try {
+                await saveToClipboard(text);
+                showAlertMessage(successMessage);
+            } catch (error) {
+                console.error(error);
+                Alert.showError('Could not copy to clipboard.');
+            }
         }
 
         /**

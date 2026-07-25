@@ -8,6 +8,72 @@ describe('CopyToClipboard', function () {
     });
 
     describe('Copy document to clipboard', function () {
+        function prepareCopyUi(text) {
+            document.body.innerHTML = (
+                '<div id="status" class="hidden"></div>' +
+                '<div id="errormessage" class="hidden"></div>' +
+                '<div id="placeholder"></div>' +
+                '<div id="prettymessage" class="hidden"><pre id="prettyprint"></pre></div>' +
+                '<div id="plaintext" class="hidden"></div>' +
+                '<h5 id="copyShortcutHint" class="hidden">' +
+                    '<button type="button" id="copyShortcutHintBtn"></button>' +
+                '</h5>'
+            );
+            PrivateBin.Alert.init();
+            PrivateBin.PasteViewer.init();
+            PrivateBin.PasteViewer.setFormat('plaintext');
+            PrivateBin.PasteViewer.setText(text);
+            PrivateBin.PasteViewer.run();
+            PrivateBin.CopyToClipboard.init();
+        }
+
+        it('uses the native copy event clipboard data', function () {
+            const text = 'copied through the event';
+            let copiedText = null,
+                asynchronousWrites = 0;
+            common.enableClipboard();
+            navigator.clipboard.writeText = function () {
+                ++asynchronousWrites;
+                return Promise.resolve();
+            };
+            prepareCopyUi(text);
+
+            const event = new Event('copy', {bubbles: true, cancelable: true});
+            event.clipboardData = {
+                setData: function (type, value) {
+                    if (type === 'text/plain') {
+                        copiedText = value;
+                    }
+                }
+            };
+            document.body.dispatchEvent(event);
+
+            assert.strictEqual(copiedText, text);
+            assert.strictEqual(asynchronousWrites, 0);
+            assert.strictEqual(event.defaultPrevented, true);
+        });
+
+        it('reports a rejected clipboard write instead of claiming success', async function () {
+            const originalConsoleError = console.error;
+            common.enableClipboard();
+            navigator.clipboard.writeText = function () {
+                return Promise.reject(new Error('permission denied'));
+            };
+            prepareCopyUi('not copied');
+            console.error = function () {};
+
+            try {
+                document.getElementById('copyShortcutHintBtn').click();
+                await new Promise(resolve => setImmediate(resolve));
+
+                assert.ok(document.getElementById('status').classList.contains('hidden'));
+                assert.ok(!document.getElementById('errormessage').classList.contains('hidden'));
+                assert.match(document.getElementById('errormessage').textContent, /copy/i);
+            } finally {
+                console.error = originalConsoleError;
+            }
+        });
+
         it('Copy with button click', async function () {
             await fc.assert(fc.asyncProperty(
                 common.fcFormats(),
