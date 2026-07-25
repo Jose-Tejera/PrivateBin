@@ -54,16 +54,19 @@ function buildEmailDomWithShortUrl() {
 function makeWindowOpenMock() {
     const originalOpen = window.open;
     let openedUrl = null;
+    let openCount = 0;
     let mockRestoreFn = null;
 
     if (typeof jest !== 'undefined' && typeof jest.spyOn === 'function') {
         const spy = jest.spyOn(window, 'open').mockImplementation((url) => {
+            ++openCount;
             openedUrl = url;
             return {};
         });
         mockRestoreFn = () => spy.mockRestore();
     } else {
         window.open = function (url) {
+            ++openCount;
             openedUrl = url;
             return {};
         };
@@ -72,6 +75,7 @@ function makeWindowOpenMock() {
 
     return {
         getUrl: () => openedUrl,
+        getCount: () => openCount,
         restore: () => {
             if (mockRestoreFn) {
                 mockRestoreFn();
@@ -160,6 +164,30 @@ describe('Email - mail body content (short URL vs. fallback)', function () {
                 body,
                 /only be accessed once/,
                 'email body must use the viewed paste metadata'
+            );
+        } finally {
+            restore();
+        }
+    });
+
+    it('replaces stale email handlers when paste metadata is refreshed', function () {
+        buildEmailDomNoShortUrl();
+        PrivateBin.TopNav.init();
+        PrivateBin.TopNav.showEmailButton(60, true);
+        PrivateBin.TopNav.showEmailButton(60, false);
+
+        const { getCount, getUrl, restore } = makeWindowOpenMock();
+        try {
+            const emailButton = document.getElementById('emaillink');
+            emailButton.click();
+            emailButton.click();
+            document.getElementById('emailconfirm-timezone-current').click();
+
+            assert.strictEqual(getCount(), 1, 'only the newest handler should send email');
+            assert.doesNotMatch(
+                extractMailtoBody(getUrl()),
+                /only be accessed once/,
+                'stale paste metadata must not be used'
             );
         } finally {
             restore();
